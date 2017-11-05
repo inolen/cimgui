@@ -37,16 +37,10 @@ struct ImGuiStorage;
 struct ImFont;
 struct ImFontConfig;
 struct ImFontAtlas;
+struct ImFontGlyph;
 struct ImDrawCmd;
 struct ImGuiListClipper;
 struct ImGuiTextFilter;
-
-#if defined __cplusplus
-#define IMFONTGLYPH ImFont::Glyph
-#else
-struct Glyph;
-#define IMFONTGLYPH Glyph
-#endif
 
 typedef unsigned short ImDrawIdx;
 typedef unsigned int ImU32;
@@ -99,7 +93,11 @@ enum {
     ImGuiWindowFlags_NoBringToFrontOnFocus  = 1 << 13,
     ImGuiWindowFlags_AlwaysVerticalScrollbar = 1 << 14,
     ImGuiWindowFlags_AlwaysHorizontalScrollbar = 1 << 15,
-    ImGuiWindowFlags_AlwaysUseWindowPadding = 1 << 16
+    ImGuiWindowFlags_AlwaysUseWindowPadding = 1 << 16,
+    ImGuiWindowFlags_NoNavFocus             = 1 << 17,
+    ImGuiWindowFlags_NoNavInputs            = 1 << 18,
+    ImGuiWindowFlags_NavFlattened           = 1 << 19,
+    ImGuiWindowFlags_NoNavScroll            = 1 << 20,
 };
 
 enum {
@@ -208,6 +206,8 @@ enum {
     ImGuiCol_PlotHistogramHovered,
     ImGuiCol_TextSelectedBg,
     ImGuiCol_ModalWindowDarkening,
+    ImGuiCol_NavHighlight,
+    ImGuiCol_NavWindowingHighlight,
     ImGuiCol_COUNT
 };
 
@@ -516,6 +516,8 @@ CIMGUI_API void             igPushAllowKeyboardFocus(bool v);
 CIMGUI_API void             igPopAllowKeyboardFocus();
 CIMGUI_API void             igPushButtonRepeat(bool repeat);
 CIMGUI_API void             igPopButtonRepeat();
+CIMGUI_API void             igPushNavDefaultFocus(bool default_focus);
+CIMGUI_API void             igPopNavDefaultFocus();
 
 // Layout
 CIMGUI_API void             igSeparator();
@@ -720,8 +722,8 @@ CIMGUI_API void             igPopClipRect();
 
 // Utilities
 CIMGUI_API bool             igIsItemHovered();
-CIMGUI_API bool             igIsItemRectHovered();
 CIMGUI_API bool             igIsItemActive();
+CIMGUI_API bool             igIsItemFocused();
 CIMGUI_API bool             igIsItemClicked(int mouse_button);
 CIMGUI_API bool             igIsItemVisible();
 CIMGUI_API bool             igIsAnyItemHovered();
@@ -732,7 +734,6 @@ CIMGUI_API void             igGetItemRectSize(struct ImVec2* pOut);
 CIMGUI_API void             igSetItemAllowOverlap();
 CIMGUI_API bool             igIsWindowFocused();
 CIMGUI_API bool             igIsWindowHovered();
-CIMGUI_API bool             igIsWindowRectHovered();
 CIMGUI_API bool             igIsRootWindowFocused();
 CIMGUI_API bool             igIsRootWindowOrAnyChildFocused();
 CIMGUI_API bool             igIsRootWindowOrAnyChildHovered();
@@ -955,9 +956,9 @@ CIMGUI_API void             ImFont_SetFontSize(struct ImFont* font, float FontSi
 CIMGUI_API float            ImFont_GetScale(const struct ImFont* font);
 CIMGUI_API void             ImFont_SetScale(struct ImFont* font, float Scale_);
 CIMGUI_API void             ImFont_GetDisplayOffset(const struct ImFont* font, struct ImVec2* pOut);
-CIMGUI_API const struct IMFONTGLYPH* ImFont_GetFallbackGlyph(const struct ImFont* font);
-CIMGUI_API void             ImFont_SetFallbackGlyph(struct ImFont* font, const struct IMFONTGLYPH* FallbackGlyph_);
-CIMGUI_API float            ImFont_GetFallbackXAdvance(const struct ImFont* font);
+CIMGUI_API const struct ImFontGlyph* ImFont_GetFallbackGlyph(const struct ImFont* font);
+CIMGUI_API void             ImFont_SetFallbackGlyph(struct ImFont* font, const struct ImFontGlyph* FallbackGlyph_);
+CIMGUI_API float            ImFont_GetFallbackAdvanceX(const struct ImFont* font);
 CIMGUI_API ImWchar          ImFont_GetFallbackChar(const struct ImFont* font);
 CIMGUI_API short            ImFont_GetConfigDataCount(const struct ImFont* font);
 CIMGUI_API struct ImFontConfig* ImFont_GetConfigData(struct ImFont* font);
@@ -965,9 +966,9 @@ CIMGUI_API struct ImFontAtlas* ImFont_GetContainerAtlas(struct ImFont* font);
 CIMGUI_API float            ImFont_GetAscent(const struct ImFont* font);
 CIMGUI_API float            ImFont_GetDescent(const struct ImFont* font);
 CIMGUI_API int              ImFont_GetMetricsTotalSurface(const struct ImFont* font);
-CIMGUI_API void             ImFont_Clear(struct ImFont* font);
+CIMGUI_API void             ImFont_ClearOutputData(struct ImFont* font);
 CIMGUI_API void             ImFont_BuildLookupTable(struct ImFont* font);
-CIMGUI_API const struct IMFONTGLYPH* ImFont_FindGlyph(const struct ImFont* font, ImWchar c);
+CIMGUI_API const struct ImFontGlyph* ImFont_FindGlyph(const struct ImFont* font, ImWchar c);
 CIMGUI_API void             ImFont_SetFallbackChar(struct ImFont* font, ImWchar c);
 CIMGUI_API float            ImFont_GetCharAdvance(const struct ImFont* font, ImWchar c);
 CIMGUI_API bool             ImFont_IsLoaded(const struct ImFont* font);
@@ -977,10 +978,10 @@ CIMGUI_API void             ImFont_RenderChar(const struct ImFont* font, struct 
 CIMGUI_API void             ImFont_RenderText(const struct ImFont* font, struct ImDrawList* draw_list, float size, struct ImVec2 pos, ImU32 col, const struct ImVec4* clip_rect, const char* text_begin, const char* text_end, float wrap_width, bool cpu_fine_clip);
 // ImFont::Glyph
 CIMGUI_API int              ImFont_Glyphs_size(const struct ImFont* font);
-CIMGUI_API struct IMFONTGLYPH* ImFont_Glyphs_index(struct ImFont* font, int index);
-// ImFont::IndexXAdvance
-CIMGUI_API int              ImFont_IndexXAdvance_size(const struct ImFont* font);
-CIMGUI_API float            ImFont_IndexXAdvance_index(const struct ImFont* font, int index);
+CIMGUI_API struct ImFontGlyph* ImFont_Glyphs_index(struct ImFont* font, int index);
+// ImFont::IndexAdvanceX
+CIMGUI_API int              ImFont_IndexAdvanceX_size(const struct ImFont* font);
+CIMGUI_API float            ImFont_IndexAdvanceX_index(const struct ImFont* font, int index);
 // ImFont::IndexLookup
 CIMGUI_API int              ImFont_IndexLookup_size(const struct ImFont* font);
 CIMGUI_API unsigned short   ImFont_IndexLookup_index(const struct ImFont* font, int index);

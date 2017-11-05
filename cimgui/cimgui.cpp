@@ -410,6 +410,16 @@ CIMGUI_API void igPopButtonRepeat()
     return ImGui::PopButtonRepeat();
 }
 
+CIMGUI_API void igPushNavDefaultFocus(bool default_focus)
+{
+    return ImGui::PushNavDefaultFocus(default_focus);
+}
+
+CIMGUI_API void igPopNavDefaultFocus()
+{
+    return ImGui::PopNavDefaultFocus();
+}
+
 // Tooltip
 CIMGUI_API void igSetTooltip(CONST char* fmt, ...)
 {
@@ -1303,14 +1313,14 @@ CIMGUI_API bool igIsItemHovered()
     return ImGui::IsItemHovered();
 }
 
-CIMGUI_API bool igIsItemRectHovered()
-{
-    return ImGui::IsItemRectHovered();
-}
-
 CIMGUI_API bool igIsItemActive()
 {
     return ImGui::IsItemActive();
+}
+
+CIMGUI_API bool igIsItemFocused()
+{
+    return ImGui::IsItemFocused();
 }
 
 CIMGUI_API bool igIsItemClicked(int mouse_button)
@@ -1361,11 +1371,6 @@ CIMGUI_API bool igIsWindowFocused()
 CIMGUI_API bool igIsWindowHovered()
 {
     return ImGui::IsWindowHovered();
-}
-
-CIMGUI_API bool igIsWindowRectHovered()
-{
-    return ImGui::IsWindowRectHovered();
 }
 
 CIMGUI_API bool igIsRootWindowFocused()
